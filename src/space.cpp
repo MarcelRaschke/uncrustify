@@ -29,6 +29,8 @@
 #endif // ifdef WIN32
 
 
+constexpr static auto LCURRENT = LSPACE;
+
 using namespace std;
 using namespace uncrustify;
 
@@ -62,8 +64,10 @@ static iarf_e do_space(Chunk *first, Chunk *second, int &min_sp)
 {
    LOG_FUNC_ENTRY();
 
-   LOG_FMT(LSPACE, "%s(%d): orig line %zu, orig col %zu, first text '%s', type %s\n",
+   LOG_FMT(LSPACE, "%s(%d): first:  orig line %zu, orig col %zu, text '%s', type %s\n",
            __func__, __LINE__, first->GetOrigLine(), first->GetOrigCol(), first->Text(), get_token_name(first->GetType()));
+   LOG_FMT(LSPACE, "%s(%d): second: orig line %zu, orig col %zu, text '%s', type %s\n",
+           __func__, __LINE__, second->GetOrigLine(), second->GetOrigCol(), second->Text(), get_token_name(second->GetType()));
 
    min_sp = 1;
 
@@ -367,11 +371,15 @@ static iarf_e do_space(Chunk *first, Chunk *second, int &min_sp)
 
    if (second->Is(CT_SEMICOLON))                       // see the tests cpp:34517-34519
    {
-      if (first->Is(CT_VBRACE_OPEN))
+      if (  first->Is(CT_VBRACE_OPEN)                  // Issue #2942
+         && first->GetPrev()->Is(CT_SPAREN_CLOSE)
+         && (  first->GetParentType() == CT_IF
+            || first->GetParentType() == CT_FOR
+            || first->GetParentType() == CT_WHILE))
       {
-         // Add or remove space before ';'.
-         log_rule("sp_before_semi");
-         return(options::sp_before_semi());
+         // Add or remove space before empty statement ';' on 'if', 'for' and 'while'.
+         log_rule("sp_special_semi");
+         return(options::sp_special_semi());
       }
 
       // Issue #4094-03
@@ -400,22 +408,20 @@ static iarf_e do_space(Chunk *first, Chunk *second, int &min_sp)
          log_rule("sp_before_semi_for");
          return(options::sp_before_semi_for());
       }
-      iarf_e arg = options::sp_before_semi();          // see the tests cpp:34517-34519
-
-      if (  first->Is(CT_VBRACE_OPEN)                  // Issue #2942
-         && first->GetPrev()->Is(CT_SPAREN_CLOSE)
-         && first->GetParentType() != CT_WHILE_OF_DO)
+      else if (  first->Is(CT_VBRACE_OPEN)                  // Issue #2942
+              && first->GetPrev()->Is(CT_SPAREN_CLOSE)
+              && first->GetParentType() != CT_WHILE_OF_DO)
       {
          // Add or remove space before empty statement ';' on 'if', 'for' and 'while'.
          log_rule("sp_special_semi");
-         arg = arg | options::sp_special_semi();
+         return(options::sp_special_semi());
       }
       else
       {
          // Add or remove space before ';'.
          log_rule("sp_before_semi");
+         return(options::sp_before_semi());
       }
-      return(arg);
    }
 
    if (  (  second->Is(CT_COMMENT)
@@ -441,6 +447,7 @@ static iarf_e do_space(Chunk *first, Chunk *second, int &min_sp)
    {
       // Add or remove space before a trailing comment.
       // Number of spaces before a trailing comment.
+      log_rule("sp_before_tr_cmt");
       log_rule("sp_num_before_tr_cmt");
       min_sp = options::sp_num_before_tr_cmt();
       return(options::sp_before_tr_cmt());
@@ -1447,7 +1454,8 @@ static iarf_e do_space(Chunk *first, Chunk *second, int &min_sp)
          && (  next->Is(CT_COMMA)
             || next->Is(CT_PAREN_CLOSE)                            // Issue #3691
             || next->Is(CT_FPAREN_CLOSE)
-            || next->Is(CT_SEMICOLON)))
+            || next->Is(CT_SEMICOLON)
+            || next->Is(CT_ANGLE_CLOSE)))                          // Issue #4064
       {
          if (options::sp_before_unnamed_byref() != IARF_IGNORE)    // Issue #3691
          {
@@ -2113,6 +2121,17 @@ static iarf_e do_space(Chunk *first, Chunk *second, int &min_sp)
       // Add or remove space between nested parentheses, i.e. '((' vs. ') )'.
       log_rule("sp_paren_paren");
       return(options::sp_paren_paren());
+   }
+
+   if (  first->Is(CT_COMMENT)                                      // Issue #4327
+      && first->GetParentType() == CT_COMMENT_EMBED)
+   {
+      // Add or remove space after an embedded comment.
+      // Number of spaces after an embedded comment.
+      log_rule("sp_after_emb_cmt");
+      log_rule("sp_num_after_emb_cmt");
+      min_sp = options::sp_num_after_emb_cmt();
+      return(options::sp_after_emb_cmt());
    }
 
    // "foo(...)" vs. "foo( ... )"
@@ -3192,17 +3211,9 @@ static iarf_e do_space(Chunk *first, Chunk *second, int &min_sp)
       // Add or remove space before an embedded comment.
       // Number of spaces before an embedded comment.
       log_rule("sp_before_emb_cmt");
+      log_rule("sp_num_before_emb_cmt");
       min_sp = options::sp_num_before_emb_cmt();
       return(options::sp_before_emb_cmt());
-   }
-
-   if (first->Is(CT_COMMENT))
-   {
-      // Add or remove space after an embedded comment.
-      // Number of spaces after an embedded comment.
-      log_rule("sp_after_emb_cmt");
-      min_sp = options::sp_num_after_emb_cmt();
-      return(options::sp_after_emb_cmt());
    }
 
    if (  first->Is(CT_NEW)
@@ -3555,6 +3566,7 @@ void space_text()
          // save the values
          save_set_options_for_QT(pc->GetLevel());
       }
+      log_rule_B("sp_skip_vbrace_tokens");
 
       // Bug # 637
       // If true, vbrace tokens are dropped to the previous token and skipped.
@@ -3566,6 +3578,7 @@ void space_text()
                && !next->IsNewline()
                && next->IsVBrace())
          {
+            log_rule_B("sp_skip_vbrace_tokens JA 3");
             LOG_FMT(LSPACE, "%s(%d): orig line is %zu, orig col is %zu, Skip %s (%zu+%zu)\n",
                     __func__, __LINE__, next->GetOrigLine(), next->GetOrigCol(), get_token_name(next->GetType()),
                     pc->GetColumn(), pc->GetStr().size());
@@ -3684,6 +3697,8 @@ void space_text()
                       */
                      // (C++11) Permit removal of the space between '>>' in 'foo<bar<int> >'. Note
                      // that sp_angle_shift cannot remove the space without this option.
+                     log_rule_B("sp_permit_cpp11_shift");
+
                      if (  (  (  language_is_set(lang_flag_e::LANG_CPP)
                               && options::sp_permit_cpp11_shift())
                            || language_is_set(lang_flag_e::LANG_JAVA)

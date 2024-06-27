@@ -287,6 +287,8 @@
 30285  cpp/Issue_2971.cfg                                   cpp/Issue_2971.cpp
 30286  cpp/Issue_3558.cfg                                   cpp/Issue_3558.cpp
 30287! cpp/Issue_3786.cfg                                   cpp/Issue_3786.cpp
+30288  cpp/sp_cmt_cpp_doxygen.cfg                           cpp/sp_cmt_cpp_doxygen.cpp
+30289  cpp/sp_func_call_user_inside_rparen.cfg              cpp/sp_func_call_user_inside_rparen.cpp
 
 30290  cpp/indent_shift.cfg                                 cpp/align_left_shift.cpp
 30291  cpp/indent_shift.cfg                                 cpp/indent_shift.cpp
@@ -294,6 +296,8 @@
 30293  cpp/pos_shift-lead.cfg                               cpp/pos_shift.cpp
 30294  cpp/pos_shift-trail.cfg                              cpp/pos_shift.cpp
 30295  cpp/pos_shift-join.cfg                               cpp/pos_shift.cpp
+30296  cpp/sp_inside_for.cfg                                cpp/sp_inside_for.cpp
+30297  cpp/Issue_4064.cfg                                   cpp/Issue_4064.cpp
 
 30300  cpp/ben_020.cfg                                      cpp/enum_shr.cpp
 30301  cpp/al.cfg                                           cpp/enum_class.h
@@ -345,7 +349,7 @@
 30706  cpp/bug_1020.cfg                                     cpp/bug_1020.cpp
 
 30711  common/del_semicolon.cfg                             cpp/semicolons.cpp
-30712  common/empty.cfg                                     cpp/bug_1158.cpp
+30712  cpp/Issue_1158.cfg                                   cpp/bug_1158.cpp
 30713  common/empty.cfg                                     cpp/fix_for_relational_operators.cpp
 30714  common/empty.cfg                                     cpp/Issue_1733.cpp
 30715  cpp/Issue_2942.cfg                                   cpp/Issue_2942.cpp
@@ -466,6 +470,9 @@
 
 30880  common/empty.cfg                                     cpp/bug_1758.cpp
 30881  cpp/bug_1758-f.cfg                                   cpp/bug_1758-f.cpp
+30882  cpp/sp_cmt_cpp_start.cfg                             cpp/sp_cmt_cpp_start.cpp
+30883  cpp/sp_cmt_cpp_lint.cfg                              cpp/sp_cmt_cpp_lint.cpp
+30884  cpp/sp_cmt_cpp_pvs.cfg                               cpp/sp_cmt_cpp_pvs.cpp
 
 30900  common/region-0.cfg                                  cpp/region.cpp
 30901  common/region-1.cfg                                  cpp/region.cpp
